@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="map_keys">map_keys.bmp</file>
+        <file alias="map_comp">mega map v6.1.bmp</file>
+    </qresource>
+</RCC>
