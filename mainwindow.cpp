@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
+//========== KONSTRUKTOR ============================================================================================================================================================
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     if(SystemKeyboardReadWrite::instance()->setConnected(true))
@@ -8,32 +10,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     else
         qDebug("Could not connect Keyboard Hook!");
 
+
     ui->setupUi(this);
 
-    ui->lblTime->setText("");
-    ui->lblDate->setText("");
 
-    // Statusbar initialisieren:
-/*
-    statuslabel0 = new QLabel( "acz", statusBar() );
-    statuslabel0->setAlignment(Qt::AlignLeft);
-    statuslabel1 = new QLabel( "", statusBar() );
-    statuslabel1->setAlignment(Qt::AlignCenter);
-    statuslabel2 = new QLabel( "", statusBar() );
-    statuslabel2->setAlignment(Qt::AlignCenter);
-    statuslabel3 = new QLabel( "", statusBar() );
-    statuslabel3->setAlignment(Qt::AlignRight);
-    statusBar()->addWidget( statuslabel0, true );
-    statusBar()->addWidget( statuslabel1, true );
-    statusBar()->addWidget( statuslabel2, true );
-    statusBar()->addWidget( statuslabel3, true );
-*/
-    // Find screen and calculate offset to move the window:
+//---------- Setup Screen Offset -----------------------------------------------------------------------------------------------------------------------------------------------------------
     QList<QRect> screensizes;
     for(int i=0; i<QDesktopWidget().screenCount(); i++)
     {
         screensizes << QDesktopWidget().screenGeometry(i);
-        //qDebug("Screen Size %u: %u x %u", i+1, screensizes[i].width(), screensizes[i].height());
     }
     screenoffsetx = 0;
     screenoffsety = 0;
@@ -46,13 +31,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             break;
         }
     }
-    qDebug( "Screen Offset: %u", screenoffsetx );
+    qDebug( "Screen Offset X: %u Y: %u", screenoffsetx , screenoffsety);
 
-    // Show the GUI:
     if(screenoffsetx > 0)
     {
         this->move(screenoffsetx, screenoffsety);
-        //this->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint);
         this->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::CustomizeWindowHint | Qt::WindowStaysOnTopHint);
         this->showMaximized();
         this->setWindowFlags(Qt::Tool | Qt::MSWindowsFixedSizeDialogHint | Qt::CustomizeWindowHint | Qt::WindowStaysOnTopHint);
@@ -61,47 +44,43 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     else
         this->show();
 
+//---------- Setup Blinker -------------------------------------------------------------------------------------------------------------------------------------------------------------
     blinktimer = new QTimer(this);
     connect(blinktimer, SIGNAL(timeout()), this, SLOT(timer_blink()));
-    blinktimer->start(500);
-
+    blinktimer->start(1000);
     timer_blink();  // do it immediately to show time, etc.
 
+//---------- Setup Menu -------------------------------------------------------------------------------------------------------------------------------------------------------------
     QMenu *stimenu = new QMenu(this);
-        stimenu->addAction("Exit", this, SLOT(close()));
-//        stimenu->addAction("Abort");
+    stimenu->addAction("Exit", this, SLOT(close()));
 
-        // Show the SystemTrayIcon:
-        QSystemTrayIcon  *sti = new QSystemTrayIcon(this);
-        sti->setToolTip("TacScreen");
-        sti->toolTip();
-        sti->setIcon(QIcon(":/icon"));
-        sti->setContextMenu(stimenu);
-        sti->show();
+//---------- Setup SystemTrayIcon -----------------------------------------------------------------------------------------------------------------------------------------------------------
+    QSystemTrayIcon  *sti = new QSystemTrayIcon(this);
+    sti->setToolTip("TacScreen");
+    sti->toolTip();
+    sti->setIcon(QIcon(":/icon"));
+    sti->setContextMenu(stimenu);
+    sti->show();
 
+//---------- Seutp QPixmaps -------------------------------------------------------------------------------------------------------------------------------------------------------------
+    map_1 = QPixmap(":/1.bmp");
+    map_2 = QPixmap(":/2.bmp");
+    map_3 = QPixmap(":/3.bmp");
+    map_4 = QPixmap(":/4.bmp");
+    map_5 = QPixmap(":/5.bmp");
+    map_6 = QPixmap(":/6.bmp");
+    map_7 = QPixmap(":/7.bmp");
+    map_8 = QPixmap(":/8.bmp");
+    map_9 = QPixmap(":/9.bmp");
+    map_k = QPixmap(":/map_keys");
+    map_m = QPixmap(":/map_comp");
+    icon = QPixmap(":/icon");
 
-//        QPixmap map(":/map.bmp");
-        QPixmap map_k(":/map_keys");
+    w = 590;
+    h = 590;
 
-        int w = 590;
-        int h = 590;
-
-//        ui->lblMap->setPixmap(map.scaled(w,h,Qt::KeepAspectRatio));
-        ui->lblMap->setPixmap(map_k.scaled(w,h,Qt::KeepAspectRatio));
-
-    //    ui->lblMap->setPixmap(map);
-
-
-        int x = ui->lbl_icon->width();
-        int y = ui->lbl_icon->height();
-
-        QPixmap icon(":/icon");
-        ui->lbl_icon->setPixmap(icon.scaled(x,y,Qt::KeepAspectRatio));
-        ui->lbl_icon->setText("");
-
-        ui->lbl_deadhunter_i->setText("0");
-        ui->lbl_lastshot_i->setText("0");
-        ui->lbl_missiontime_i->setText("0");
+//---------- Setup GUI -------------------------------------------------------------------------------------------------------------------------------------------------------------
+    Reset_Mission();
 
 }
 
@@ -110,67 +89,65 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+//========== BLINKER ============================================================================================================================================================
 void MainWindow::timer_blink()
 {
-    /*****************
-     * Current Time: *
-     *****************/
+//---------- Current Time -------------------------------------------------------------------------------------------------------------------------------------------------------------
     ui->lblTime->setText(QDateTime::currentDateTime().toString("hh:mm:ss"));
     ui->lblDate->setText(QDateTime::currentDateTime().toString("dd.MM.yyyy"));
 
-    // Mission Time:
-    //endtime.isValid()
+//---------- Mission Timer -------------------------------------------------------------------------------------------------------------------------------------------------------------
+    if (endtime.isValid())
+    {
+        if (endtime < QDateTime::currentDateTime())
+        {
+            Reset_Mission();
+        }
+        else
+        {
+            int secs = QDateTime::currentDateTime().secsTo(endtime);
+            int minutes = secs/60;
+            secs = secs%60;
 
+            QString m = QString::number(minutes);
+            while(m.length() < 2)
+                m = "0"+m;
 
-    int secs = QDateTime::currentDateTime().secsTo(endtime);
-    int minutes = secs/60;
-    secs = secs%60;
+            QString s = QString::number(secs);
+            while(s.length() < 2)
+                s = "0"+s;
 
-    QString m = QString::number(minutes);
-    while(m.length() < 2)
-        m = "0"+m;
+            ui->lbl_missiontime_i->setText(m + ":" + s);
+        }
+    }
 
-    QString s = QString::number(secs);
-    while(s.length() < 2)
-        s = "0"+s;
+//---------- Last Shot -------------------------------------------------------------------------------------------------------------------------------------------------------------
+    if (lastshot.isValid())
+    {
+        int secs = lastshot.secsTo(QDateTime::currentDateTime());
+        int minutes = secs/60;
+        secs = secs%60;
 
-    ui->lbl_missiontime_i->setText(QString::number(minutes) + ":" + s);
+        QString m = QString::number(minutes);
+        while(m.length() < 2)
+            m = "0"+m;
+
+        QString s = QString::number(secs);
+        while(s.length() < 2)
+            s = "0"+s;
+
+        ui->lbl_lastshot_i->setText(m + ":" + s);
+    }
 }
 
-//==========KEYS====================================================
-
+//========== KEYS ============================================================================================================================================================
 void MainWindow::keyPressed(byte *keysDepressed, DWORD keyPressed)
 {
     Q_UNUSED(keysDepressed);
 
     qDebug("KeyCode: %u (0x%02x)", (unsigned int)keyPressed, (unsigned int)keyPressed);
 
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx
-
-    QPixmap map_m(":/map_comp");
-    QPixmap map_k(":/map_keys");
-
-    QPixmap map_1(":/1.bmp");
-    QPixmap map_2(":/2.bmp");
-    QPixmap map_3(":/3.bmp");
-    QPixmap map_4(":/4.bmp");
-    QPixmap map_5(":/5.bmp");
-    QPixmap map_6(":/6.bmp");
-    QPixmap map_7(":/7.bmp");
-    QPixmap map_8(":/8.bmp");
-    QPixmap map_9(":/9.bmp");
-
-//    int w = ui->lblMap->width();
-//    int h = ui->lblMap->height();
-
-
-//    qDebug("width: %d height: %d"), (int)w, (int)h;
-
-    int w = 590;
-    int h = 590;
-
-//-------------------MAP------------------------------------
-
+//---------- MAP -------------------------------------------------------------------------------------------------------------------------------------------------------------
     if(keyPressed == 111) //Num/
     {
         ui->lblMap->setPixmap(map_m.scaled(w,h,Qt::KeepAspectRatio));
@@ -181,8 +158,7 @@ void MainWindow::keyPressed(byte *keysDepressed, DWORD keyPressed)
         ui->lblMap->setPixmap(map_k.scaled(w,h,Qt::KeepAspectRatio));
     }
 
-//-------------------KILLCOUNT------------------------------------
-
+//---------- KILLCOUNT --------------------------------------------------------------------------------------------------------------------------------------
     if(keyPressed == 109) //Num-
     {
         int n = ui->lbl_deadhunter_i->text().toInt();
@@ -203,72 +179,64 @@ void MainWindow::keyPressed(byte *keysDepressed, DWORD keyPressed)
         n=10;
 
         ui->lbl_deadhunter_i->setText(QString::number(n));
-//       ui->lbl_deadhunter_i->setText("Dead Hunters: " + QString::number(n));
     }
 
-//-------------------SPLITMAP------------------------------------
-
+//---------- SPLITMAP ---------------------------------------------------------------------------------------------------------------------------------------------------
     if(keyPressed == 103) //Num7
-    {
         ui->lblMap->setPixmap(map_7.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 104) //Num8
-    {
         ui->lblMap->setPixmap(map_8.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 105) //Num9
-    {
         ui->lblMap->setPixmap(map_9.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 100) //Num4
-    {
         ui->lblMap->setPixmap(map_4.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 101) //Num5
-    {
         ui->lblMap->setPixmap(map_5.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 102) //Num6
-    {
         ui->lblMap->setPixmap(map_6.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 97) //Num1
-    {
         ui->lblMap->setPixmap(map_1.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 98) //Num2
-    {
         ui->lblMap->setPixmap(map_2.scaled(w,h,Qt::KeepAspectRatio));
-    }
 
     if(keyPressed == 99) //Num3
-    {
         ui->lblMap->setPixmap(map_3.scaled(w,h,Qt::KeepAspectRatio));
-    }
 }
 
-//==========BUTTONS====================================================
-
+//========= BUTTONS ============================================================================================================================================================
 void MainWindow::on_btn_start_clicked()
 {
     ui->lbl_deadhunter_i->setText("0");
-    //ui->lbl_missiontime_i->setText(QDateTime::currentDateTime().toString("hh:mm:ss"));
-    ui->lbl_lastshot_i->setText("0");
-
-    endtime = QDateTime::currentDateTime().addSecs(3600);
+    ui->lbl_lastshot_i->setText("-");
+    endtime = QDateTime::currentDateTime().addSecs(1*60);
+    lastshot = QDateTime();
+    ui->lbl_icon->setPixmap(icon.scaled(ui->lbl_icon->width(),ui->lbl_icon->height(),Qt::KeepAspectRatio));
 }
-
-
-
 
 void MainWindow::on_btn_lastshot_clicked()
 {
-    ui->lbl_lastshot_i->setText(QDateTime::currentDateTime().toString("hh:mm:ss"));
+    lastshot = QDateTime::currentDateTime();
+}
+
+//========= SUBS ============================================================================================================================================================
+void MainWindow::Reset_Mission()
+{
+    ui->lbl_deadhunter_i->setText("-");
+    ui->lbl_missiontime_i->setText("-");
+    ui->lbl_lastshot_i->setText("-");
+
+    endtime = QDateTime();
+    lastshot = QDateTime();
+
+    ui->lbl_icon->setPixmap(icon.scaled(0,0,Qt::KeepAspectRatio));
+    ui->lbl_icon->setText("");
+
+    ui->lblMap->setPixmap(map_k.scaled(w,h,Qt::KeepAspectRatio));
 }

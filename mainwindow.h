@@ -35,13 +35,16 @@ private:
     Ui::MainWindow *ui;
     QLabel *statuslabel0, *statuslabel1, *statuslabel2, *statuslabel3;
     QTimer *blinktimer;
-    QDateTime endtime, missiontime;
+    QDateTime endtime, missiontime, lastshot;
     QTime lastmousepress;
     QPoint mousepos;
     int screenoffsetx, screenoffsety;
+    QPixmap map_1, map_2, map_3, map_4, map_5, map_6, map_7, map_8, map_9, map_k, icon, map_m;
+    int w, h;
 
 public slots:
     void timer_blink();
+    void Reset_Mission();
     void keyPressed(byte *keysDepressed, DWORD keyPressed);
 private slots:
     void on_btn_start_clicked();
