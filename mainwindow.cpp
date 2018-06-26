@@ -117,6 +117,24 @@ void MainWindow::timer_blink()
      *****************/
     ui->lblTime->setText(QDateTime::currentDateTime().toString("hh:mm:ss"));
     ui->lblDate->setText(QDateTime::currentDateTime().toString("dd.MM.yyyy"));
+
+    // Mission Time:
+    //endtime.isValid()
+
+
+    int secs = QDateTime::currentDateTime().secsTo(endtime);
+    int minutes = secs/60;
+    secs = secs%60;
+
+    QString m = QString::number(minutes);
+    while(m.length() < 2)
+        m = "0"+m;
+
+    QString s = QString::number(secs);
+    while(s.length() < 2)
+        s = "0"+s;
+
+    ui->lbl_missiontime_i->setText(QString::number(minutes) + ":" + s);
 }
 
 //==========KEYS====================================================
@@ -241,8 +259,10 @@ void MainWindow::keyPressed(byte *keysDepressed, DWORD keyPressed)
 void MainWindow::on_btn_start_clicked()
 {
     ui->lbl_deadhunter_i->setText("0");
-    ui->lbl_missiontime_i->setText(QDateTime::currentDateTime().toString("hh:mm:ss"));
+    //ui->lbl_missiontime_i->setText(QDateTime::currentDateTime().toString("hh:mm:ss"));
     ui->lbl_lastshot_i->setText("0");
+
+    endtime = QDateTime::currentDateTime().addSecs(3600);
 }
 
 

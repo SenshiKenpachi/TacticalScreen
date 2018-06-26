@@ -35,6 +35,7 @@ private:
     Ui::MainWindow *ui;
     QLabel *statuslabel0, *statuslabel1, *statuslabel2, *statuslabel3;
     QTimer *blinktimer;
+    QDateTime endtime, missiontime;
     QTime lastmousepress;
     QPoint mousepos;
     int screenoffsetx, screenoffsety;
